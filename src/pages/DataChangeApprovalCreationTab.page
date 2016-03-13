@@ -1,0 +1,839 @@
+<apex:page controller="DataChangeApprovalCreationTabCtrl" sidebar="false" action="{! init}">
+<apex:stylesheet value="{!URLFOR($Resource.DCA_Files, 'spinner/spinner.css')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DCA_Files, 'js/jquery-1.11.1.min.js')}"/> 
+<script src="{!URLFOR($Resource.DCA_Files, 'js/jquery-ui-1.10.4.js')}"></script>
+<script src="{!URLFOR($Resource.DCA_Files, 'spinner/spinner.js')}"></script>
+<apex:stylesheet value="{!URLFOR($Resource.DCA_Files, 'development-bundle/themes/base/jquery-ui.css')}" />
+<apex:includeScript value="{!URLFOR($Resource.jszip, '/jszip.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jszip, '/jszip-load.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jszip, '/jszip-deflate.js')}"/>
+<apex:includeScript value="{!URLFOR($Resource.jszip, '/jszip-inflate.js')}"/>
+<link href="{!URLFOR($Resource.DCA_Files, 'fontawesome/css/font-awesome.min.css')}" rel="stylesheet"/>
+
+<style>
+	h2 { 
+		display: block; 
+		font-size: 18px;
+	}
+	
+	.btnDca:link,
+	.btnDca:visited { 
+		background: #00B4CC;
+		border-radius: 2px;
+		padding: 5px 7px;
+		color: white;
+		margin: 5px 0;
+		font-size: 12px;
+		font-family: Arial, sans-serif;
+		font-weight: bold;
+		display: inline-block;
+		text-decoration: none;
+	}
+	
+	.btnDca:hover, 
+	.ui-tabs .ui-tabs-panel table a.btnDca:hover {
+		background: #008C9E;
+		color: white !important; 
+	}
+	
+	.layout td {
+		vertical-align: top !important;
+	}
+	
+	.layout .buttonCell {
+		vertical-align: middle !important;
+	}
+	
+	.infomessage {
+		border: 1px solid #0074ac;
+		padding: 12px;
+		text-align: left;
+		border-radius: 5px;
+		color: #222;
+		font-size: 12px;
+		background: #eefdff;
+		line-height: 24px;
+	}
+	
+	.message {
+		background: #eefdff !important;
+	}
+	
+	.message h4 {
+		text-align: left;
+	}
+	
+	.infomessage i {
+		color: #5fb5e3;
+	}
+
+	.recTypeTable th {
+		color: white;
+		background: #00B4CC;
+	}
+
+	.recTypeTable td {
+		vertical-align: middle !important;
+	}
+
+	.multilist {
+		height: 386px;
+	}
+</style>
+<script>
+	function addRT() {
+		if ($('.messageText').length <= 0) {
+			addRecType();
+		} else {
+			endSplash();
+		}
+	}
+</script>
+	<apex:form id="formId">
+	<div class="splashStatus" id="splashDiv">
+        <div class="circle"><img src="{!URLFOR($Resource.Spinner, 'spinner.gif')}"/></div>
+        <div class="txt">Please Wait. Loading...</div>
+    </div>
+
+    <apex:actionFunction action="{! addRecordTypes}" name="addRecType" status="splashStatus" reRender="blockObjectsId, tableObjectsId" oncomplete="endSplash();"/>
+
+    <apex:actionFunction action="{! deleteDCAObject}" name="deleteDCAObject" status="splashStatus" reRender="blockObjectsId, tableObjectsId" oncomplete="endSplash(); checkMessage();" />
+
+	<apex:actionStatus id="splashStatus" onstart="startSplash();" onstop="endSplash(); "/>
+	<apex:actionStatus id="splashStatus2" onstart="startSplash();"/>
+	<!-- <apex:actionFunction name="deployZip" action="{!deployZip}" rerender="none"> 
+		<apex:param name="data" assignTo="{! ZipData}" value=""/>
+	</apex:actionFunction> -->
+	
+	<div id="tabs" style="display: none;">
+	  	<ul> 
+	  		<li><a href="#tabs-1"><i class="fa fa-plus-circle"></i> Add/Remove Objects</a></li>
+	  		<li><a href="#tabs-2"><i class="fa fa-user"></i> Add for whom to apply DataChange Approval</a></li>
+	  		<li><a href="#tabs-3"><i class="fa fa-users"></i> Add Managers for DataChange Approval</a></li>
+		    <li><a href="#tabs-4"><i class="fa fa-list-alt"></i> Approval List</a></li>
+		    <li><a href="#tabs-5"><i class="fa fa-list-ul"></i> Approval Results</a></li>
+		</ul>
+	<div id="tabs-1">
+		<apex:pageBlock id="blockObjectsId" mode="maindetail">
+			<!-- <c:zip name="generateZip" oncomplete="deployZip(data);"> 
+				<c:zipEntry path="package.xml" data="{! PackageXml}"/>
+				<c:zipEntry path="triggers/DCA_{! currentLabelWithoutSpaces}Trigger.trigger-meta.xml" data="{! TriggerMetadata}"/>
+				<c:zipEntry path="triggers/DCA_{! currentLabelWithoutSpaces}Trigger.trigger" data="{! TriggerText}"/>
+			</c:zip> -->
+			<apex:outputPanel layout="block" styleClass="duelingListBox">
+				<table class="layout" width="900px;" style="margin: 0 auto;">
+					<tr>
+						<td colspan="3">
+							<apex:pageMessages id="errorMessageId"/>
+						
+							<div class="infomessage infoM3">
+								<img alt="INFO" class="msgIcon" src="/s.gif" title="INFO" style="margin-bottom: -7px;"/> Select object, fields and click 'Add/Update Object' please
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td class="selectCell">
+							<apex:outputPanel layout="block" styleClass="selectTitle" style="margin-top: 3px;">
+				              <apex:outputLabel value="Objects" for="objectListId" />
+				            </apex:outputPanel> 
+							<apex:selectList value="{! currentObject }" id="objectListId" multiselect="false" size="25" style="height: 386px;">
+					        	<apex:actionSupport event="onchange" action="{! displayFields}" reRender="blockObjectsId" status="splashStatus"/>
+					        	<apex:selectOption itemLabel="--None--" itemValue="None"/>  
+								<apex:selectOptions value="{! allObjects}"/>
+							</apex:selectList>
+						</td> 
+						<td style="display:{! IF (recordTypeSOList.size > 0, '', 'none')}">
+							<apex:outputPanel layout="block" styleClass="selectTitle" style="margin-top: 3px;">
+				              <apex:outputLabel value="Record Types" for="recordTypeListId" />
+				            </apex:outputPanel> 
+		                	<!-- <apex:selectList id="recordTypeListId" size="20" multiselect="true" style="width:250px;">
+		                		<apex:selectOptions value="{! recordTypeSOList}"/>
+		                	</apex:selectList> -->
+							
+							<apex:outputPanel id="recTypePanelId">
+			                	<table border="1" width="250px" cellpadding="0" cellspacing="0" height="386px" rules="rows" class="recTypeTable">
+			                		<tr>
+				                		<th width="20%" >
+				                			<div align="center">
+												<!-- <apex:inputCheckbox value="{! isChecked}" /> -->
+												<apex:inputCheckbox value="{! allRecTypeSelected}">
+							                		<apex:actionSupport event="onchange" action="{! selectAllRecTypes}" status="splashStatus" reRender="recTypePanelId" />
+							                	</apex:inputCheckbox>	
+				                			</div>
+				                		</th>
+				                		<th width="80%"><div align="center">Record Type</div></th>
+				                	</tr>
+				                	<apex:repeat value="{! recordTypeSOList}" var="recType">
+					                	<tr>
+					                		<td valign="middle">
+												<apex:inputCheckbox value="{! recType.isChecked}" />
+					                		</td>
+					                		<td valign="middle">
+					                			{! recType.recType.Name}
+					                		</td>
+					                	</tr>
+					                </apex:repeat>
+			                	</table>
+			                </apex:outputPanel>
+		                </td>
+						<td>
+							<c:MultiselectPicklist leftLabel="Available Fields"
+				                leftOptionsAttr="{! allFields}"
+				                rightLabel="Selected Fields"
+				                rightOptionsAttr="{!selectedFields}"
+				                size="25" 
+				                width="250px"/>
+		                </td>  
+					</tr>
+					<tr>
+						<td colspan="{! IF (recordTypeSOList.size > 0, 4, 3)}">
+							<div style="text-align: center; margin-top: 20px;">
+				            	<!-- oncomplete="generateZip();" -->
+								<apex:commandLink action="{! doAddObject}" styleClass="btnDca" 
+									 status="splashStatus2" reRender="blockObjectsId, tableObjectsId, errorMessageId" oncomplete="addRT()">
+									<i class="fa fa-plus-circle"></i> Add/Update Object
+								</apex:commandLink>
+								  
+								<!-- <apex:commandButton value="add child obj" action="{! addChildObject}" /> -->
+								<!-- <apex:commandButton value="delete Trigger" action="{! deleteTrigger}" /> -->
+							</div>
+						</td>
+					</tr>
+				</table>
+			</apex:outputPanel> 
+		</apex:pageBlock> 
+		<apex:pageBlock id="tableObjectsId" mode="maindetail">
+			<apex:outputPanel >
+				<apex:outputLabel value="Selected Objects" style="font-weight: bold; font-size: 1.15em; margin-left: 10px;"/>
+
+		        <apex:commandLink action="{! refreshTab}" reRender="tableObjectsId" styleClass="btnDca" status="splashStatus" style="margin-left: 10px; margin-bottom: 10px;"> Refresh
+
+		        	<apex:param name="tabsNumber" value="1" id="tabsNumber"/>
+				</apex:commandLink>
+			</apex:outputPanel>
+
+			<apex:pageBlockTable value="{! selectedObjects}" var="so"  rendered="{!NOT(ISNULL(selectedObjects))}">
+				<apex:column >
+				<!-- onclick="return confirm('Are you sure?');" -->
+					<apex:facet name="header">Action</apex:facet>
+					<apex:commandLink status="splashStatus2" rerender="none" 
+						action="{! deleteObject}" oncomplete="deleteDCAObject()"> 
+						<i class="fa fa-remove" style="color: #cc0033;"></i>
+                       	<apex:param name="deleteObject" value="{! so.Name}"/>
+                       	<apex:param name="statusObject" value="{! so.Status}"/>  
+                   	</apex:commandLink> 
+                  	</apex:column>
+                <apex:column headerValue="Object Name" value="{! so.Name}" />
+                <apex:column headerValue="Record Types">
+                	<apex:outputText escape="false" value="{! so.recTypes}" />
+                	<a href="#"  onclick="showAllFields(this);" style="float: left; margin-top: 5px; padding: 2px; font-size: 11px; display: {! IF(so.recTypesCount > 5, 'block', 'none')}">Show All</a>
+                </apex:column>
+                <apex:column headerValue="Selected Fields">
+                	<apex:outputText escape="false" value="{! so.Fields}" />
+                    <a href="#"  onclick="showAllFields(this);" style="float: left; margin-top: 5px; padding: 2px; font-size: 11px; display: {! IF(so.countOfField > 5, 'block', 'none')}">Show All</a>
+                </apex:column>
+                <!-- <apex:column headerValue="Deploy Status" value="{! so.Status}" />  -->
+                <apex:column >
+                	<apex:facet name="header">Deploy Status</apex:facet>
+                	<apex:outputText value="{! so.Status}"/>
+                	<apex:commandLink value="Refresh" rerender="blockObjectsId, tableObjectsId" styleClass="btnDca" action="{! refreshTrigger }" 
+                			rendered="{! IF (so.Status == 'Failed', 'true', 'false')}" status="splashStatus">
+                		<apex:param name="objectName" value="{! so.Name}" />
+                	</apex:commandLink>
+                </apex:column>
+	         </apex:pageBlockTable>
+		</apex:pageBlock>
+	</div>
+	<div id="tabs-2"> 
+		<apex:commandLink action="{! goToAddMember}" styleClass="btnDca">
+			<i class="fa fa-plus-circle"></i> Add
+		</apex:commandLink>
+
+        <apex:commandLink action="{! refreshTab}" reRender="tableDCAMId" styleClass="btnDca" status="splashStatus" style="margin-left: 10px;"> Refresh
+
+        	<apex:param name="tabsNumber" value="2" id="tabsNumber2"/>
+		</apex:commandLink>
+
+		<apex:pageBlock id="tableDCAMId" mode="maindetail">
+            <apex:pageBlockTable value="{! DCAMemberWrapperList}" var="member"  rendered="{!NOT(ISNULL(DCAMemberWrapperList))}">
+            	<apex:column >
+					<apex:facet name="header">Action</apex:facet>
+					<apex:commandLink action="{! deleteDCAMember}" status="splashStatus"
+						onclick="return confirm('Are you sure?');">
+						<i class="fa fa-remove" style="color: #cc0033;"></i>
+                       	<apex:param name="delMember" value="{! member.Id}"/>  
+                   	</apex:commandLink>
+                   	<apex:outputText value=" | "/>
+                   	<apex:commandLink style="text-decoration: none" action="{! editDCAMember}">
+                   		<i class="fa fa-edit"></i>
+                   		<apex:param name="editMember" value="{! member.Id}"/>
+                   	</apex:commandLink>
+				</apex:column>
+                <apex:column value="{! member.Name}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkDCAMembers }" reRender="tableDCAMId" status="splashStatus">
+							<apex:outputText escape="false" value="Name {! 
+											IF(sortFieldDCAM == 'Name', 
+												IF (sortOrderDCAM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderDCAM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldDCAM" value="Name" />
+							<apex:param name="sortOrderDCAM" value="{! IF(sortFieldDCAM == 'Name', IF (sortOrderDCAM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+				</apex:column>
+                <apex:column value="{! member.Type}" >
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkDCAMembers }" reRender="tableDCAMId" status="splashStatus">
+							<apex:outputText escape="false" value="Type {! 
+											IF(sortFieldDCAM == 'Type__c', 
+												IF (sortOrderDCAM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderDCAM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldDCAM" value="Type__c" />
+							<apex:param name="sortOrderDCAM" value="{! IF(sortFieldDCAM == 'Type__c', IF (sortOrderDCAM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+                <apex:column value="{! member.Objects}" >
+                	<apex:facet name="header">Objects</apex:facet>
+                </apex:column>
+            </apex:pageBlockTable>
+		</apex:pageBlock>
+	</div>
+	<div id="tabs-3">
+		<!-- <h2>Add users to management group</h2> -->
+		<apex:pageMessages />
+		<apex:commandLink action="{! goToAdd}" styleClass="btnDca">
+			<i class="fa fa-plus-circle"></i> Add
+		</apex:commandLink>
+
+        <apex:commandLink action="{! refreshTab}" reRender="tableManId" styleClass="btnDca" status="splashStatus" style="margin-left: 10px;"> Refresh
+
+        	<apex:param name="tabsNumber" value="3" id="tabsNumber3"/>
+		</apex:commandLink>
+
+		<apex:pageBlock id="tableManId" mode="maindetail">
+            <apex:pageBlockTable value="{! DCAManagerWrapperList}" var="manager"  rendered="{!NOT(ISNULL(DCAManagerWrapperList))}">
+            	<apex:column >
+					<apex:facet name="header">Action</apex:facet>
+					<apex:commandLink action="{! deleteManager}" status="splashStatus"
+						onclick="return confirm('Are you sure?');">
+						<i class="fa fa-remove" style="color: #cc0033;"></i>
+                       	<apex:param name="delManager" value="{! manager.Id}"/>  
+                   	</apex:commandLink>
+                    	<apex:outputText value=" | "/>
+                   	<apex:commandLink style="text-decoration: none" action="{! editManager}">
+                   		<i class="fa fa-edit"></i>
+                   		<apex:param name="editManager" value="{! manager.Id}"/>
+                   	</apex:commandLink>
+				</apex:column>
+                <apex:column value="{! manager.Name}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedManagers }" reRender="tableManId" status="splashStatus">
+							<apex:outputText escape="false" value="Name {! 
+											IF(sortFieldMAN == 'Name', 
+												IF (sortOrderMAN == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderMAN == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldMAN" value="Name" />
+							<apex:param name="sortOrderMAN" value="{! IF(sortFieldDCAM == 'Name', IF (sortOrderMAN == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+				</apex:column>
+                <apex:column value="{! manager.Type}" >
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedManagers }" reRender="tableManId" status="splashStatus">
+							<apex:outputText escape="false" value="Type {! 
+											IF(sortFieldMAN == 'Type__c', 
+												IF (sortOrderMAN == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderMAN == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldMAN" value="Type__c" />
+							<apex:param name="sortOrderMAN" value="{! IF(sortFieldMAN == 'Type__c', IF (sortOrderMAN == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+                <apex:column >
+                	<apex:facet name="header">Objects</apex:facet>
+					<apex:outputText escape="false" value="{! manager.Objects}" />
+                </apex:column>
+
+                <apex:column >
+                	<apex:facet name="header">Filters</apex:facet>
+                	<table style="width:100%">
+                		<tr>
+                			<th style="font-weight: bold;">Object Name</th>
+                			<th style="font-weight: bold;">Field</th>
+                			<th style="font-weight: bold;">Operator</th>
+                			<th style="font-weight: bold;">Value</th>
+                		</tr>
+                		<apex:repeat value="{! manager.filters}" var="filter">
+	                		<tr>
+	                			<td>
+									{! filter.Object_Name__c}
+	                			</td>
+	                			<td>
+									{! filter.Field_Label__c}
+	                			</td>
+								<td>
+									{! filter.Operator__c}
+	                			</td>
+								<td>
+									{! filter.Value__c}
+	                			</td>
+	                		</tr>
+                		</apex:repeat>
+                	</table>
+                </apex:column>
+            </apex:pageBlockTable>
+		</apex:pageBlock>
+	</div>
+	<div id="tabs-4"> 
+		<apex:pageBlock title="" mode="maindetail" id="alListId">
+	        <apex:commandLink action="{! refreshTab}" reRender="alListId" styleClass="btnDca" status="splashStatus"> Refresh
+
+	        	<apex:param name="tabsNumber" value="4" id="tabsNumber4"/>
+			</apex:commandLink>
+
+			<apex:pageBlockTable value="{! alWrapperList}" var="a" rendered="{!NOT(ISNULL(ApprovalList))}">
+				<apex:column headerValue="№" value="{! a.Count}" />
+				<apex:column value="{! a.appList.Object__c}">
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalList }" reRender="alListId" status="splashStatus">
+							<apex:outputText escape="false" value="Object {! 
+											IF(sortFieldAL == 'Object__c', 
+												IF (sortOrderAL == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAL == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAL" value="Object__c" />
+							<apex:param name="sortOrderAL" value="{! IF(sortFieldAL == 'Object__c', IF (sortOrderAL == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet> 
+				</apex:column>
+				<apex:column >
+					<apex:facet name="header">
+						<apex:commandLink action="{! checkApprovalList }" reRender="alListId" status="splashStatus">
+							<i class="fa fa-user"></i> 
+							<apex:outputText escape="false" value=" User {! 
+											IF(sortFieldAL == 'User_Name__c', 
+												IF (sortOrderAL == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAL == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAL" value="User_Name__c" />
+							<apex:param name="sortOrderAL" value="{! IF(sortFieldAL == 'User_Name__c', IF (sortOrderAL == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+					<apex:outputLink value="{! a.appList.User_Link__c}" target="_blank">{! a.appList.User_Name__c}</apex:outputLink>
+				</apex:column>
+				<apex:column >
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalList }" reRender="alListId" status="splashStatus">
+							<i class="fa fa-link"></i>
+							<apex:outputText escape="false" value=" Link to Record {! 
+											IF(sortFieldAL == 'Record_Name__c', 
+												IF (sortOrderAL == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAL == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAL" value="Record_Name__c" />
+							<apex:param name="sortOrderAL" value="{! IF(sortFieldAL == 'Record_Name__c', IF (sortOrderAL == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+					<apex:outputLink value="{! a.appList.Link_to_Record__c}" target="_blank" >{! a.appList.Record_Name__c}</apex:outputLink>
+				</apex:column>
+				<apex:column >
+					<apex:facet name="header"><i class="fa fa-check-circle"></i> Approval Link</apex:facet>
+					<apex:outputLink value="{! a.appList.Approval_Link__c}" target="_blank" id="theApprovalLink">Go to Approval page</apex:outputLink>
+				</apex:column>
+				<apex:column value="{! a.appList.CreatedDate} ">
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalList }" reRender="alListId" status="splashStatus">
+							<i class="fa fa-calendar"></i>
+							<apex:outputText escape="false" value=" Created Date {! 
+											IF(sortFieldAL == 'CreatedDate', 
+												IF (sortOrderAL == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAL == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAL" value="CreatedDate" />
+							<apex:param name="sortOrderAL" value="{! IF(sortFieldAL == 'CreatedDate', IF (sortOrderAL == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+				</apex:column>
+			</apex:pageBlockTable>
+		</apex:pageBlock>
+	</div>
+	<div id="tabs-5">
+		<apex:pageBlock title="" mode="maindetail" id="arListId">
+	        <apex:commandLink action="{! refreshTab}" reRender="arListId" styleClass="btnDca" status="splashStatus"> Refresh
+
+	        	<apex:param name="tabsNumber" value="5" id="tabsNumber5"/>
+			</apex:commandLink>
+			<apex:pageBlockTable value="{! arWrapperResult}" var="ar" rendered="{!NOT(ISNULL(approvalResults))}">
+				<apex:column > 
+					<apex:facet name="header">Action</apex:facet>
+					<apex:commandLink action="{! deleteApprovalResult}" 
+						onclick="return confirm('Are you sure?');">
+						<i class="fa fa-remove" style="color: #cc0033;"></i>
+                       	<apex:param name="delAR" value="{! ar.appResult.Id}"/>  
+                   	</apex:commandLink>
+                </apex:column>
+                <apex:column headerValue="№" value="{! ar.Count}" />
+				<apex:column value="{! ar.appResult.Object__c}">
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalResults }" reRender="arListId" status="splashStatus">
+							<apex:outputText escape="false" value="Object {! 
+											IF(sortFieldAR == 'Object__c', 
+												IF (sortOrderAR == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAR == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAR" value="Object__c" />
+							<apex:param name="sortOrderAR" value="{! IF(sortFieldAR == 'Object__c', IF (sortOrderAR == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet> 
+				</apex:column>
+				<apex:column >
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalResults }" reRender="arListId" status="splashStatus">
+							<i class="fa fa-user"></i>
+							<apex:outputText escape="false" value=" Approver {! 
+											IF(sortFieldAR == 'Approver__c', 
+												IF (sortOrderAR == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAR == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAR" value="Approver__c" />
+							<apex:param name="sortOrderAR" value="{! IF(sortFieldAR == 'Approver__c', IF (sortOrderAR == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+					<apex:outputField value="{! ar.appResult.Approver__c}" />
+				</apex:column>
+				<apex:column >
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalResults }" reRender="arListId" status="splashStatus">
+							<i class="fa fa-link"></i>
+							<apex:outputText escape="false" value=" Link to Record {! 
+											IF(sortFieldAR == 'Record_Name__c', 
+												IF (sortOrderAR == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAR == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAR" value="Record_Name__c" />
+							<apex:param name="sortOrderAR" value="{! IF(sortFieldAR == 'Record_Name__c', IF (sortOrderAR == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+					<apex:outputLink value="{! ar.appResult.Link_to_Record__c}" target="_blank" >{! ar.appResult.Record_Name__c}</apex:outputLink>
+				</apex:column>
+				<apex:column >
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalResults }" reRender="arListId" status="splashStatus">
+							<i class="fa fa-check-circle"></i>
+							<apex:outputText escape="false" value=" Result {! 
+											IF(sortFieldAR == 'Result__c', 
+												IF (sortOrderAR == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAR == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAR" value="Result__c" />
+							<apex:param name="sortOrderAR" value="{! IF(sortFieldAR == 'Result__c', IF (sortOrderAR == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+					<apex:outputText style="{! IF(OR(ar.appResult.Result__c == 'Changes were approved.', ar.appResult.Result__c == 'Creation was approved.'), 'color: green;', IF (OR(ar.appResult.Result__c == 'Changes were rejected.', ar.appResult.Result__c == 'Creation was rejected.'), 'color: red;', 'color: #e88f41;')) }" value="{! ar.appResult.Result__c}"/> 
+				</apex:column>
+				<apex:column value="{! ar.appResult.Comments__c}">
+					<apex:facet name="header">
+						<i class="fa fa-comments"></i> Comments
+					</apex:facet>
+				</apex:column>
+				<apex:column value="{! ar.appResult.CreatedDate} ">
+					<apex:facet name="header"> 
+						<apex:commandLink action="{! checkApprovalResults }" reRender="arListId" status="splashStatus">
+							<i class="fa fa-calendar"></i>
+							<apex:outputText escape="false" value=" Approval Date {! 
+											IF(sortFieldAR == 'CreatedDate', 
+												IF (sortOrderAR == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderAR == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldAR" value="CreatedDate" />
+							<apex:param name="sortOrderAR" value="{! IF(sortFieldAR == 'CreatedDate', IF (sortOrderAR == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+				</apex:column>
+			</apex:pageBlockTable>
+		</apex:pageBlock>
+	</div>
+
+	<div class="lightbox"></div>
+	</div>
+	</apex:form>
+	<script>
+	  $(function() {
+	    $( "#tabs" ).tabs({ active: {! activeTab } }); 
+	    
+	    $("#tabs").css("display", "block"); 
+	    
+	  	var tabNumber = getParameterByName('tabNumber');
+	  	if (tabNumber == "2") {
+	  		$( "#tabs" ).tabs({active: 1});
+	  	} 
+	  	if (tabNumber == "3") {
+	  		$( "#tabs" ).tabs({active: 2});
+	  	}
+	  });
+	  
+	  function getParameterByName(name) {
+	    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+	    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+	        results = regex.exec(location.search);
+	    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+	  }
+	  	function showAllFields(element){
+            event.preventDefault();
+            $(element).parent().find('ul').find('li').each(function(index, element) {
+                var array = [];
+
+                if(index > 4) {
+                    
+                    array.push(element);
+                    
+                }
+
+                $(array).slideToggle(400);
+            });
+
+            if ($(element).html() == 'Show All') {
+                $(element).html('Show Less');
+            } else {
+                $(element).html('Show All');
+            }
+        }
+        function checkMessage() {
+        	if($(".messageCell").is(":visible") == true) {
+	            $('html, body').animate({ scrollTop: 0 }, 800);
+	        }
+        }
+ 		
+
+	</script>
+</apex:page>
+
+<!-- <apex:pageBlockTable value="{! selectedUsers}" var="us"  rendered="{!NOT(ISNULL(selectedUsers))}">
+            	<apex:column >
+					<apex:facet name="header">Action</apex:facet>
+					<apex:commandLink action="{! deleteGroupMember}" 
+						onclick="return confirm('Are you sure?');">
+						<i class="fa fa-remove" style="color: #cc0033;"></i>
+                       	<apex:param name="delGM" value="{! us.Id}"/>  
+                   	</apex:commandLink>
+                 		</apex:column>
+                <apex:column >
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Name {! 
+											IF(sortFieldSM == 'Name', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="Name" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'Name', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                    <apex:commandLink value="{! us.Name}" action="{! viewUser}">
+                        <apex:param name="recordId" value="{! us.Id}"/>
+                    </apex:commandLink>
+                </apex:column>
+                <apex:column value="{! us.Email}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Email {! 
+											IF(sortFieldSM == 'Email', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="Email" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'Email', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+                <apex:column value="{! us.Alias}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Alias {! 
+											IF(sortFieldSM == 'Alias', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="Alias" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'Alias', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+                <apex:column value="{! us.Username}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Username {! 
+											IF(sortFieldSM == 'Username', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="Username" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'Username', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+           		<apex:column value="{! us.UserRoleId}">
+           			<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Role {! 
+											IF(sortFieldSM == 'UserRoleId', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="UserRoleId" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'UserRoleId', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+           		</apex:column>
+                <apex:column value="{! us.IsActive}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Active {! 
+											IF(sortFieldSM == 'IsActive', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="IsActive" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'IsActive', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+                <apex:column value="{! us.ProfileId}">
+                	<apex:facet name="header"> 
+						<apex:commandLink action="{! checkSelectedUsers }" reRender="tableGMId">
+							<apex:outputText escape="false" value="Profile {! 
+											IF(sortFieldSM == 'ProfileId', 
+												IF (sortOrderSM == 'ASC', 
+													'&#9650;', 
+													IF (sortOrderSM == 'DESC', 
+														'&#9660;', 
+														''
+													)
+												), 
+												''
+											)}" />
+							<apex:param name="sortFieldSM" value="ProfileId" />
+							<apex:param name="sortOrderSM" value="{! IF(sortFieldSM == 'ProfileId', IF (sortOrderSM == 'ASC', 'DESC', 'ASC'), 'ASC') }" />
+						</apex:commandLink>
+					</apex:facet>
+                </apex:column>
+            </apex:pageBlockTable> -->

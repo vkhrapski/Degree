@@ -1,0 +1,89 @@
+<apex:page controller="DataChangeApprovalCtrl">
+<apex:form >
+<link href="{!URLFOR($Resource.DCA_Files, 'fontawesome/css/font-awesome.min.css')}" rel="stylesheet"/>
+<style type="text/css">
+    .btnDca:link,
+    .btnDca:visited {
+        background: #00B4CC;
+        border-radius: 2px;
+        padding: 5px 7px;
+        color: white;
+        margin: 5px 0;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        display: inline-block;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+    
+    .btnDca:hover,
+    .ui-tabs .ui-tabs-panel table a.btnDca:hover {
+        background: #008C9E;
+        color: white !important; 
+    }
+
+    .bPageBlock .detailList .dataCol {
+        border: none;
+    }
+
+    body .bPageBlock .detailList tr th {
+        border: none;
+    }
+</style>
+    <apex:pageMessages />
+        <apex:pageBlock Title="Record" mode="maindetail" rendered="{! approved}">
+            <apex:pageBlockSection columns="5" >
+            
+                <apex:pageBlockSectionItem >
+                <apex:outputLabel value="Record Name" for="name"/>
+                <apex:outputText value="{! recordName }" id="name"/>
+                </apex:pageBlockSectionItem>    
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                <apex:repeat value="{! objectWrapperFields }" var="field" >
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="{! field.field.label}" /> 
+                        <apex:outputField value="{! record[field.field.fieldPath]}" />  
+                    </apex:pageBlockSectionItem> 
+                    <apex:pageBlockSectionItem >
+                        <apex:outputLabel value="Initial Value" for="initial" rendered="{! field.currentState}"/>
+                        <apex:outputField value="{! originalRecord[field.field.fieldPath]}" rendered="{! field.currentState}" id="initial"/>    
+                    </apex:pageBlockSectionItem>    
+                    <apex:pageBlockSectionItem >        
+                        <apex:outputLabel value="Approve/Reject" for="check" rendered="{! field.currentState}"/>
+                        <apex:inputCheckBox value="{! field.currentState}" rendered="{! field.currentState}" id="check"/>
+                    </apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem ></apex:pageBlockSectionItem>
+                    <apex:pageBlockSectionItem >        
+                        <apex:outputLabel value="Comment" for="text" rendered="{! field.currentState}"/>
+                        <apex:inputText value="{! field.text}" rendered="{! field.textState}" size="40" id="text"/>
+                    </apex:pageBlockSectionItem>
+                </apex:repeat>
+            </apex:pageBlockSection>
+            <!-- <apex:pageBlockSection> -->
+            <table width="90%">
+            	<tr>
+            		<td>
+            			<div align="center">
+            				<apex:outputPanel layout="block" styleClass="selectTitle" style="margin-top: 3px;">
+				              <apex:outputLabel value="Comments" style="font-weight:bold" for="textAreaId" />
+				            </apex:outputPanel> 
+            				<apex:inputTextArea rows="5" id="textAreaId" style="width:600px; align:center;" label="Comments" value="{! globalComment}" />
+            			</div>
+            		</td>
+            	</tr>
+            </table>
+           <!--  </apex:pageBlockSection> -->
+            <apex:pageBlockButtons location="bottom">
+                <apex:commandLink styleClass="btnDca" action="{!doApprove}"> 
+                    <i class="fa fa-plus-circle"></i> Approve/Reject
+                </apex:commandLink>
+                <apex:commandLink styleClass="btnDca" value="Reject all changes" action="{!doReject}"/> 
+                <apex:commandLink styleClass="btnDca" value="Cancel" action="{!doCancelApprove}"/>             
+            </apex:pageBlockButtons>
+        </apex:pageBlock>
+    </apex:form>      
+</apex:page>

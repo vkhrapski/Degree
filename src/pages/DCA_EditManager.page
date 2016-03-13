@@ -1,0 +1,165 @@
+<apex:page controller="DCA_EditManagerCtrl" action="{! init}" sidebar="false">
+<link href="{!URLFOR($Resource.DCA_Files, 'fontawesome/css/font-awesome.min.css')}" rel="stylesheet"/>
+<apex:stylesheet value="{!URLFOR($Resource.DCA_Files, 'spinner/spinner.css')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DCA_Files, 'js/jquery-1.11.1.min.js')}"/> 
+<script src="{!URLFOR($Resource.DCA_Files, 'js/jquery-ui-1.10.4.js')}"></script>
+<script src="{!URLFOR($Resource.DCA_Files, 'spinner/spinner.js')}"></script>
+
+<style type="text/css">
+    .btnDca:link,
+    .btnDca:visited {
+        background: #00B4CC;
+        border-radius: 2px;
+        padding: 5px 7px;
+        color: white;
+        margin: 5px 0;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        display: inline-block;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+    
+    .btnDca:hover,
+    .ui-tabs .ui-tabs-panel table a.btnDca:hover {
+        background: #008C9E;
+        color: white !important; 
+    }
+    
+    h2 {
+		display: block;
+		font-size: 18px;
+	}
+
+	.wrapper {
+		width: 900px;
+		margin: 0 auto;
+	}
+	
+	.pageTitleIcon {
+		display: none;
+	}
+	
+	.parent {
+		width: 100%;
+	}
+	
+	.layout {
+		margin-left: 165px;
+	}
+</style>
+	<apex:form id="formId">
+		<div class="splashStatus" id="splashDiv">
+	        <div class="circle"><img src="{!URLFOR($Resource.Spinner, 'spinner.gif')}"/></div>
+	        <div class="txt">Please Wait. Loading...</div>
+	    </div>
+
+	    <apex:actionStatus id="splashStatus" onstart="startSplash();" onstop="endSplash(); "/>
+
+		<div class="wrapper">
+			<apex:sectionHeader title="{! dcaManager.Type__c}" subtitle="{! dcaManager.Name}"/>
+			<apex:pageMessages />
+
+			<apex:outputPanel rendered="{! NOT isFilter}">
+				<apex:pageBlock mode="maindetail">
+					<table width="100%">
+						<tr>
+							<td>
+							 	<div class="parent">
+									<c:MultiselectPicklist leftLabel="Available Objects"
+												               leftOptionsAttr="{! availableObjects}"
+												               rightLabel="Selected Objects"
+												               rightOptionsAttr="{! selectedObjects}"
+												               size="15" 
+												               width="250px"/>
+								</div>
+							</td>
+						</tr>	
+					</table>			               
+							             
+				</apex:pageBlock>
+				<p style="text-align: center">
+						<apex:commandLink styleClass="btnDca" action="{! addFilters}" reRender="formId" status="splashStatus">
+							<i class="fa fa-plus-circle"></i> Next
+						</apex:commandLink>	
+						<apex:commandLink styleClass="btnDca" action="{! doCancel}">
+							<i class="fa fa-times-circle"></i> Cancel
+						</apex:commandLink>
+				</p>
+			</apex:outputPanel>
+		</div>
+
+		<div align="center" style="margin-top: 20px">
+			<apex:outputPanel rendered="{! isFilter}" id="filterBlockId">
+				<table border="1" cellpadding="10" cellspacing="0">
+					<apex:repeat value="{! dcaFilterWrapperList}" var="object">
+						<tr>
+							<td style="font-size: 14px; padding-top: 10px; padding-bottom: 10px; text-decoration: underline;">
+								<h3>{! object.objectLabel}</h3>
+							</td>
+							<td>
+								<table>
+									<tr>
+										<th>Field</th>
+										<th>Operator</th>
+										<th>Value</th>
+										<th></th>
+										<th></th>
+									</tr>
+									<apex:variable value="{!1}" var="fltrNumber"/>
+									<apex:repeat value="{! object.filterList}" var="filter">
+										
+										<tr>	
+											<td>
+												<apex:selectList value="{! filter.Field__c}" size="1" multiselect="false">
+													<apex:selectOptions value="{! objectFieldsMap[object.objectName]}" />
+												</apex:selectList>
+											</td>
+											<td>
+												<apex:selectList value="{! filter.Operator__c}" size="1" multiselect="false">
+													<apex:selectOptions value="{! operationList}" />
+												</apex:selectList>
+											</td>
+											<td>
+												<apex:inputText value="{! filter.Value__c}" />
+											</td>
+											<td>
+												<apex:commandLink action="{! removeFilter}" reRender="filterBlockId" status="splashStatus">
+													<apex:param name="obj" value="{! object.objectName}" />
+													<apex:param name="fltr" value="{! fltrNumber}" />
+													<i class="fa fa-remove" style="color: #cc0033;"></i>
+												</apex:commandLink>
+											</td>
+											<td>
+												<span style="display: {! IF(fltrNumber == object.filterList.size, 'none', '')}">AND</span>
+												
+											</td>
+										</tr>
+										<apex:variable var="fltrNumber" value="{! fltrNumber + 1}"/>
+									</apex:repeat>
+									<tr>
+										<td>
+											<apex:commandLink action="{! addNewFilter}" value="Add" reRender="filterBlockId" status="splashStatus">
+												<apex:param name="obj" value="{! object.objectName}" />
+											</apex:commandLink>
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</apex:repeat>
+				</table>
+				<div align="center" style="margin-top: 10px">
+					<apex:commandLink styleClass="btnDca" action="{! doSave}">
+						<i class="fa fa-plus-circle"></i>Save
+					</apex:commandLink>
+					<apex:commandLink styleClass="btnDca" action="{! doCancel}">
+						<i class="fa fa-times-circle"></i> Cancel
+					</apex:commandLink>
+				</div>
+			</apex:outputPanel>
+		</div>
+	</apex:form>
+	<div class="lightbox"></div>
+</apex:page>

@@ -1,0 +1,14 @@
+{
+    "folders": [
+        {
+            "file_exclude_patterns": [
+                "*.md", 
+                "*.*-meta.xml"
+            ], 
+            "folder_exclude_patterns": [
+                ".history"
+            ], 
+            "path": "d:/home/work/wave/Degree"
+        }
+    ]
+}

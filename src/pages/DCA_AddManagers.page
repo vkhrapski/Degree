@@ -1,0 +1,183 @@
+<apex:page controller="DCA_AddManagersCtrl" action="{! init}" sidebar="false">
+<link href="{!URLFOR($Resource.DCA_Files, 'fontawesome/css/font-awesome.min.css')}" rel="stylesheet"/>
+<apex:stylesheet value="{!URLFOR($Resource.DCA_Files, 'spinner/spinner.css')}"/>
+<apex:includeScript value="{!URLFOR($Resource.DCA_Files, 'js/jquery-1.11.1.min.js')}"/> 
+<script src="{!URLFOR($Resource.DCA_Files, 'js/jquery-ui-1.10.4.js')}"></script>
+<script src="{!URLFOR($Resource.DCA_Files, 'spinner/spinner.js')}"></script>
+
+<style type="text/css">
+    .btnDca:link,
+    .btnDca:visited {
+        background: #00B4CC; 
+        border-radius: 2px;
+        padding: 5px 7px;
+        color: white;
+        margin: 5px 0;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        display: inline-block;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+    
+    .btnDca:hover,
+    .ui-tabs .ui-tabs-panel table a.btnDca:hover {
+        background: #008C9E;
+        color: white !important; 
+    }
+    
+    h2 {
+		display: block;
+		font-size: 18px;
+	}
+
+	.infomessage {
+		border: 1px solid #0074ac;
+		padding: 12px;
+		text-align: left;
+		border-radius: 5px;
+		color: #222;
+		font-size: 12px;
+		background: #eefdff;
+		line-height: 24px;
+		margin: 20px;
+	}
+	
+	.message {
+		background: #eefdff !important;
+	}
+	
+	.message h4 {
+		text-align: left;
+	}
+	
+	.infomessage i {
+		color: #5fb5e3;
+	}
+
+</style>
+	<apex:form id="formId"> 
+		<div class="splashStatus" id="splashDiv">
+	        <div class="circle"><img src="{!URLFOR($Resource.Spinner, 'spinner.gif')}"/></div>
+	        <div class="txt">Please Wait. Loading...</div>
+	    </div>
+
+	    <apex:actionStatus id="splashStatus" onstart="startSplash();" onstop="endSplash(); "/>
+
+		<apex:pageMessages />
+		<h2>Add Managers for DataChange Approval</h2>
+
+		<div class="infomessage infoM3">
+			<img alt="INFO" class="msgIcon" src="/s.gif" title="INFO" style="margin-bottom: -7px;"/> 'Available Managers' picklist displays only the first 1,000 items. Please use the search if you do not see a necessary manager
+		</div>
+
+		<apex:pageBlock mode="maindetail" rendered="{! NOT isFilter}"> 
+			<apex:pageBlockButtons >
+				<apex:commandLink styleClass="btnDca" action="{! addFilters}" value="Next" reRender="formId" status="splashStatus"/>
+				<apex:commandLink styleClass="btnDca" action="{! doCancel}">
+					<i class="fa fa-times-circle"></i> Cancel
+				</apex:commandLink>
+			</apex:pageBlockButtons>
+			<apex:pageBlockSection columns="2" id="blockManagersId">
+				<apex:outputPanel >
+					<apex:outputLabel for="typeListId" value="Search: " />
+					<apex:selectList value="{! currentType }" id="typeListId" multiselect="false" size="1">
+			        	<apex:actionSupport event="onchange" action="{! displayMembers}" reRender="blockManagersId" status="splashStatus"/>
+						<apex:selectOptions value="{! allTypes}"/>
+					</apex:selectList>
+					<apex:outputLabel for="selectListId" value="for: " style="margin-left: 5px;"/>
+					<apex:inputText value="{! searchString}" /> 
+					<apex:commandLink styleClass="btnDca" action="{! doSearch}" value="Find" reRender="blockManagersId" status="splashStatus"/>
+				</apex:outputPanel>
+				<apex:pageBlockSectionItem />
+				<c:MultiselectPicklist leftLabel="Available Members"
+						               leftOptionsAttr="{! allMembersSO}"
+						               rightLabel="Selected Members"
+						               rightOptionsAttr="{! selectedMembersSO}"
+						               size="15" 
+						               width="350px"/>
+				<c:MultiselectPicklist leftLabel="Available Objects"
+						               leftOptionsAttr="{! availableObjects}"
+						               rightLabel="Selected Objects"
+						               rightOptionsAttr="{! selectedObjects}"
+						               size="15" 
+						               width="250px"/>
+			</apex:pageBlockSection>
+		</apex:pageBlock>
+		<div align="center" style="margin-top: 20px">
+			<apex:outputPanel rendered="{! isFilter}" id="filterBlockId">
+				<table border="1" cellpadding="10" cellspacing="0">
+					<apex:repeat value="{! dcaFilterMap}" var="manager">
+						<tr>
+							<td style="padding-top: 20px; padding-bottom: 10px; font-size: 16px;">
+								<h3>{! manager}</h3>
+							</td>
+
+							<td>
+								<apex:repeat value="{! dcaFilterMap[manager]}" var="object">
+									<table cellpadding="5" cellspacing="0">
+										<tr>
+											<td style="font-size: 14px; padding-top: 10px; padding-bottom: 10px; text-decoration: underline;">
+												<h3>{! object.objectLabel}</h3>
+											</td>
+										</tr>
+									
+										<tr>
+											<th>Field</th>
+											<th>Operator</th>
+											<th>Value</th>
+											<th></th>
+										</tr>
+
+										<apex:variable value="{!1}" var="fltrNumber"/>
+										<apex:repeat value="{! object.filterList}" var="filter">
+											
+											<tr>	
+												<td>
+													<apex:selectList value="{! filter.Field__c}" size="1" multiselect="false">
+														<apex:selectOptions value="{! objectFieldsMap[object.objectName]}" />
+													</apex:selectList>
+												</td>
+												<td>
+													<apex:selectList value="{! filter.Operator__c}" size="1" multiselect="false">
+														<apex:selectOptions value="{! operationList}" />
+													</apex:selectList>
+												</td>
+												<td>
+													<apex:inputText value="{! filter.Value__c}" />
+												</td>
+												<td>
+													<span style="display: {! IF(fltrNumber == object.filterList.size, 'none', '')}">AND</span>
+													
+												</td>
+											</tr>
+											<apex:variable var="fltrNumber" value="{! fltrNumber + 1}"/>
+										</apex:repeat>
+										<tr>
+											<td>
+												<apex:commandLink action="{! addNewFilter}" value="Add" reRender="filterBlockId" status="splashStatus">
+													<apex:param name="mnger" value="{! manager}" />
+													<apex:param name="obj" value="{! object.objectName}" />
+												</apex:commandLink>
+											</td>
+										</tr>
+									</table>
+								</apex:repeat>
+							</td>
+						</tr>
+					</apex:repeat>
+				</table>
+				<div align="center" style="margin-top: 10px">
+					<apex:commandLink styleClass="btnDca" action="{! doAdd}">
+						<i class="fa fa-plus-circle"></i>Add
+					</apex:commandLink>
+					<apex:commandLink styleClass="btnDca" action="{! doCancel}">
+						<i class="fa fa-times-circle"></i> Cancel
+					</apex:commandLink>
+				</div>
+			</apex:outputPanel>
+		</div>
+	</apex:form>
+	<div class="lightbox"></div>
+</apex:page>

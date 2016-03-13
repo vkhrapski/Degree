@@ -1,0 +1,107 @@
+<apex:page controller="DCA_AddMembersCtrl" action="{! init}" sidebar="false">
+<link href="{!URLFOR($Resource.DCA_Files, 'fontawesome/css/font-awesome.min.css')}" rel="stylesheet"/>
+<style type="text/css">
+    .btnDca:link,
+    .btnDca:visited {
+        background: #00B4CC;
+        border-radius: 2px;
+        padding: 5px 7px;
+        color: white;
+        margin: 5px 0;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        display: inline-block;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+    
+    .btnDca:hover,
+    .ui-tabs .ui-tabs-panel table a.btnDca:hover {
+        background: #008C9E;
+        color: white !important; 
+    }
+    
+    h2 {
+		display: block;
+		font-size: 18px;
+	}
+
+	.recTypeTable th {
+		color: white;
+		background: #00B4CC;
+	}
+
+	.recTypeTable td {
+		vertical-align: middle !important;
+	}
+
+	.infomessage {
+		border: 1px solid #0074ac;
+		padding: 12px;
+		text-align: left;
+		border-radius: 5px;
+		color: #222;
+		font-size: 12px;
+		background: #eefdff;
+		line-height: 24px;
+		margin: 20px;
+	}
+	
+	.message {
+		background: #eefdff !important;
+	}
+	
+	.message h4 {
+		text-align: left;
+	}
+	
+	.infomessage i {
+		color: #5fb5e3;
+	}
+</style>
+	<apex:form > 
+		<apex:pageMessages />
+		<h2>Add for whom to apply DataChange Approval</h2>
+
+		<div class="infomessage infoM3">
+			<img alt="INFO" class="msgIcon" src="/s.gif" title="INFO" style="margin-bottom: -7px;"/> 'Available Members' picklist displays only the first 1,000 items. Please use the search if you do not see a necessary member
+		</div>
+
+		<apex:pageBlock mode="maindetail"> 
+			<apex:pageBlockButtons >
+				<apex:commandLink styleClass="btnDca" action="{! doAdd}">
+					<i class="fa fa-plus-circle"></i>Add
+				</apex:commandLink>	
+				<apex:commandLink styleClass="btnDca" action="{! doCancel}">
+					<i class="fa fa-times-circle"></i> Cancel
+				</apex:commandLink>
+			</apex:pageBlockButtons>
+			<apex:pageBlockSection columns="2" id="blockMembersId">
+				<apex:outputPanel >
+					<apex:outputLabel for="typeListId" value="Search: " />
+					<apex:selectList value="{! currentType }" id="typeListId" multiselect="false" size="1">
+			        	<apex:actionSupport event="onchange" action="{! displayMembers}" reRender="blockMembersId"/>
+						<apex:selectOptions value="{! allTypes}"/>
+					</apex:selectList>
+					<apex:outputLabel for="selectListId" value="for: " />
+					<apex:inputText value="{! searchString}" /> 
+					<apex:commandLink styleClass="btnDca" action="{! doSearch}" value="Find" reRender="blockMembersId" />
+				</apex:outputPanel>
+				<apex:pageBlockSectionItem />
+				<c:MultiselectPicklist leftLabel="Available Members"
+						               leftOptionsAttr="{! allMembersSO}"
+						               rightLabel="Selected Members"
+						               rightOptionsAttr="{! selectedMembersSO}"
+						               size="15" 
+						               width="350px"/>
+				<c:MultiselectPicklist leftLabel="Available Objects"
+						               leftOptionsAttr="{! availableObjects}"
+						               rightLabel="Selected Objects"
+						               rightOptionsAttr="{! selectedObjects}"
+						               size="15" 
+						               width="250px"/>
+			</apex:pageBlockSection>
+		</apex:pageBlock>
+	</apex:form>
+</apex:page>

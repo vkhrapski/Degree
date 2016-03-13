@@ -1,0 +1,19 @@
+{
+    "instance_url": "https://ap2.salesforce.com", 
+    "X-SFDC-Session": "00D2800000177KH!AR0AQFoql4T9z0ZXK8YAuV3DrO6bRSRNxFPHRRoQr1aEMa2VRa2v3RaFQo_JffToD7HjUzuw74SpkmqPOPidBg8H3f8G9g8S", 
+    "time_stamp": "2016-03-13 14:51:22", 
+    "session_id": "00D2800000177KH!AR0AQFoql4T9z0ZXK8YAuV3DrO6bRSRNxFPHRRoQr1aEMa2VRa2v3RaFQo_JffToD7HjUzuw74SpkmqPOPidBg8H3f8G9g8S", 
+    "metadata_url": "https://ap2.salesforce.com/services/Soap/m/34.0", 
+    "user_id": "00528000001LIJqAAO", 
+    "headers": {
+        "Content-Type": "application/json; charset=UTF-8", 
+        "Accept": "application/json", 
+        "Authorization": "OAuth 00D2800000177KH!AR0AQFoql4T9z0ZXK8YAuV3DrO6bRSRNxFPHRRoQr1aEMa2VRa2v3RaFQo_JffToD7HjUzuw74SpkmqPOPidBg8H3f8G9g8S"
+    }, 
+    "success": true, 
+    "partner_url": "https://ap2.salesforce.com/services/Soap/u/34.0", 
+    "project name": "Degree", 
+    "apex_url": "https://ap2.salesforce.com/services/Soap/s/34.0", 
+    "rest_url": "https://ap2.salesforce.com/services/data/v34.0", 
+    "server_url": "https://ap2.salesforce.com/services/Soap/u/5.0/00D2800000177KH"
+}
